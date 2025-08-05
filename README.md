@@ -1,4 +1,4 @@
-# TokamakDisruptionPredictions
+# Tokamak Disruption Predictions (Fusion Plasma)
 
 This project explores a simplified simulation or analysis related to tokamak reactors—devices designed to confine plasma using magnetic fields for the purpose of achieving controlled nuclear fusion. Tokamaks are a central focus of fusion research due to their potential to provide clean, virtually limitless energy. The goal of this project is to model, analyze, or solve a computational problem relevant to the behavior of plasma inside a tokamak reactor, such as magnetic confinement, energy balance, or particle motion. It serves as an educational tool or starting point for further study into plasma physics, computational modeling, or fusion energy systems.
 

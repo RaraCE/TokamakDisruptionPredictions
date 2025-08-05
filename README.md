@@ -5,3 +5,12 @@ This project explores a simplified simulation or analysis related to tokamak rea
 The script generates a graph that visualizes the  signal amplitude versus the time step. Demonstrating how the disrupted and normal signals for plasma, magnetic, and density changes. This helps illustrate the behavior of plasma or magnetic fields inside a tokamak under simplified assumptions.
 
 <img src="graph for plasma_magnetic_density.png" alt="plot describing synthetic plasma signal">
+
+
+If you'd like to run this project directly in your browser using GitHub Codespaces, follow these steps:
+
+1. Fork or Clone the Repository
+2. Open in Codespaces
+3. Install Dependencies (numpy, matplotlib, pandas, Line2D from matplotlib)
+4. Run the Script
+5. (Optional) Modify and Experiment

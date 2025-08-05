@@ -1,0 +1,138 @@
+# Tokamak Disruption Prediction (Fusion Plasma)
+# Goal: Predict when a distruption will occur in a tokamak based on sensor data
+# website: https://www.plasma-mds.org/
+# https://www.inptdat.de/search/type/dataset
+# https://www.google.com/search?q=open+data+sources+on+plasma+physics&rlz=1C1VDKB_enUS1017US1017&oq=open+data+sources+on+plasma+physics&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIHCAEQABjvBTIKCAIQABiiBBiJBTIKCAMQABiABBiiBDIKCAQQABiABBiiBDIKCAUQABiiBBiJBdIBCDg3OTdqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8
+
+# Create Synthetic Plasma Signal Data
+
+#Define the signal parameters
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Settings
+time_steps = 500
+num_samples = 100
+disruption_chance = 0.3
+
+# Signal generator function with multiple channels and realistic noise
+def generate_multichannel_signal(disrupted=False):
+    t = np.linspace(0, 10, time_steps)
+
+    # Base oscillatory patterns + base noise
+    plasma_current = np.sin(2 * np.pi * 0.3 * t) + np.random.normal(0, 0.1, size=t.shape)
+    magnetic_field = 0.5 * np.sin(2 * np.pi * 0.5 * t + 1) + np.random.normal(0, 0.1, size=t.shape)
+    density = 0.8 * np.sin(2 * np.pi * 0.2 * t - 1) + np.random.normal(0, 0.1, size=t.shape)
+
+    signals = np.stack([plasma_current, magnetic_field, density], axis=0)  # Shape: (3, time_steps)
+
+    # Disruption
+    if disrupted:
+        drop_index = np.random.randint(time_steps // 2, time_steps - 50)
+        decay = np.linspace(0, 3, time_steps - drop_index)
+        signals[0, drop_index:] -= decay
+        signals[1, drop_index:] -= decay * 0.5
+        signals[2, drop_index:] -= decay * 0.8
+
+    # Sensor dropout
+    for ch in range(3):
+        if np.random.rand() < 0.2:
+            start = np.random.randint(100, 400)
+            end = start + np.random.randint(10, 50)
+            signals[ch, start:end] = np.nan
+
+    # Spiky noise
+    for ch in range(3):
+        for _ in range(np.random.randint(1, 4)):
+            spike_idx = np.random.randint(0, time_steps)
+            spike_magnitude = np.random.uniform(1.5, 3.0)
+            signals[ch, spike_idx] += spike_magnitude * np.random.choice([-1, 1])
+
+    # Drift
+    drift_strength = np.random.uniform(-0.3, 0.3)
+    drift = np.linspace(0, drift_strength, time_steps)
+    signals += drift
+
+    # Clipping
+    signals = np.clip(signals, -2.0, 2.0)
+
+    return t, signals
+
+# === Generate dataset ===
+all_signals = []
+labels = []
+
+for i in range(num_samples):
+    is_disrupted = np.random.rand() < disruption_chance
+    t, signal = generate_multichannel_signal(disrupted=is_disrupted)
+    all_signals.append(signal)
+    labels.append(1 if is_disrupted else 0)
+
+# === Convert channels to separate DataFrames ===
+plasma_current = [sig[0] for sig in all_signals]
+magnetic_field = [sig[1] for sig in all_signals]
+density = [sig[2] for sig in all_signals]
+
+df_plasma = pd.DataFrame(plasma_current)
+df_magnetic = pd.DataFrame(magnetic_field)
+df_density = pd.DataFrame(density)
+df_labels = pd.DataFrame(labels, columns=['label'])
+
+# Save to CSV
+df_plasma.to_csv("plasma_current.csv", index=False)
+df_magnetic.to_csv("magnetic_field.csv", index=False)
+df_density.to_csv("density.csv", index=False)
+df_labels.to_csv("labels.csv", index=False)
+
+# === Visualize 5 multichannel samples ===
+plt.figure(figsize=(14, 6))
+
+# Define consistent colors per channel
+channel_colors = {
+    'Plasma': 'blue',
+    'Magnetic': 'green',
+    'Density': 'orange'
+}
+channel_names = ['Plasma', 'Magnetic', 'Density']
+
+# Use dotted lines for disrupted, solid for normal
+linestyles = {0: 'solid', 1: ':'}
+alphas = {0: 1.0, 1: 0.7}  # Optional: make disrupted slightly transparent
+
+# Keep track of legend entries
+plotted_channels = set()
+
+for i in range(5):
+    signal = all_signals[i]
+    label_value = labels[i]  # 0 or 1
+
+    for ch, ch_name in enumerate(channel_names):
+        line_color = channel_colors[ch_name]
+        line_style = linestyles[label_value]
+        alpha_val = alphas[label_value]
+
+        # Only label each channel once
+        label = ch_name if ch_name not in plotted_channels else None
+        plotted_channels.add(ch_name)
+
+        plt.plot(signal[ch], color=line_color, linestyle=line_style, alpha=alpha_val, label=label)
+
+# Create a custom legend
+from matplotlib.lines import Line2D
+
+legend_lines = [
+    Line2D([0], [0], color='blue', label='Plasma'),
+    Line2D([0], [0], color='green', label='Magnetic'),
+    Line2D([0], [0], color='orange', label='Density'),
+    Line2D([0], [0], color='black', linestyle='solid', label='Normal'),
+    Line2D([0], [0], color='black', linestyle=':', label='Disrupted')
+]
+
+plt.title("Synthetic Multichannel Plasma Signals")
+plt.xlabel("Time Step")
+plt.ylabel("Signal Amplitude")
+plt.grid(True)
+plt.legend(handles=legend_lines, loc='upper right')
+plt.tight_layout()
+plt.show()
